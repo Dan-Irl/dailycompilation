@@ -13,8 +13,10 @@ class Clip:
     view_count: int
     created_at: datetime.datetime
     thumbnail_url: str
+    thumbnail_path: str
     duration: int
-    path: str
+    clip_path: str
+    posted: bool = False
 
     def to_json(self):
         """_summary_
@@ -33,5 +35,7 @@ class Clip:
             "created_at": self.created_at.isoformat(),
             "thumbnail_url": self.thumbnail_url,
             "duration": self.duration,
-            "path": self.path,
+            "clip_path": self.clip_path,
+            "thumbnail_path": self.thumbnail_path,
+            "posted": self.posted,
         }
