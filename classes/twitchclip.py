@@ -5,6 +5,9 @@ from bs4 import BeautifulSoup
 from selenium import webdriver
 from classes.clip import Clip
 
+TODO = """
+    - Set up logger for TwitchClips"""
+
 
 class TwitchClips:
     def __init__(self):
@@ -48,24 +51,26 @@ class TwitchClips:
 
     def prepare_clips(self):
         for clip_id in self.clips_id_list:
-            clip = self.api.get_clip(clip_id)
-            clip = Clip(
-                clip["id"],
-                clip["url"],
-                clip["broadcaster_id"],
-                clip["broadcaster_name"],
-                clip["game_id"],
-                clip["title"],
-                clip["view_count"],
-                clip["created_at"],
-                clip["thumbnail_url"],
-                clip["duration"],
-                f"clips/{clip_id}.mp4",
-            )
-            
-            self.clips.append(clip)
-        
+            try:
+                clip = self.api.get_clip(clip_id)
+                clip = Clip(
+                    clip["id"],
+                    clip["url"],
+                    clip["broadcaster_id"],
+                    clip["broadcaster_name"],
+                    clip["game_id"],
+                    clip["title"],
+                    clip["view_count"],
+                    clip["created_at"],
+                    clip["thumbnail_url"],
+                    clip["duration"],
+                    f"clips/{clip_id}.mp4",
+                )
+
+                self.clips.append(clip)
+            except Exception as e:
+                print(e)
+
     def download_clips(self):
         for clip in self.clips:
-            
-            
+            pass
