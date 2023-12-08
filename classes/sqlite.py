@@ -17,7 +17,8 @@ def init_db(db_name):
                   created_at TEXT,
                   thumbnail_url TEXT,
                   duration INTEGER,
-                  path TEXT)"""
+                  path TEXT
+                  deleted INTEGER DEFAULT 0)"""
     )
     conn.commit()
     conn.close()
