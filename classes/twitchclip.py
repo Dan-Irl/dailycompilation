@@ -14,20 +14,17 @@ class TwitchClips:
         load_dotenv()
         self.client_id = os.getenv("CLIENT_ID")
         self.client_secret = os.getenv("CLIENT_SECRET")
-        self.url = os.getenv("URL")
+        self.clips_url = os.getenv("URL")
 
         self.api = TwitchAPI()
         self.api.auth(self.client_id, self.client_secret)
-
-        # Initialize the WebDriver (example using Chrome)
-        self.driver = webdriver.Chrome()
 
         self.clips_id_list = []
         self.clips = []
 
     def get_clip_ids(self):
         # Go to the URL
-        self.driver.get(self.url)
+        self.driver.get(self.clips_url)
 
         # Now you can scrape the page or interact with it as needed
         content = self.driver.page_source
@@ -50,6 +47,9 @@ class TwitchClips:
             self.clips_id_list.append(clip_id)
 
     def prepare_clips(self):
+        # Initialize the WebDriver
+        self.driver = webdriver.Chrome()
+        
         for clip_id in self.clips_id_list:
             try:
                 clip = self.api.get_clip(clip_id)
@@ -72,5 +72,31 @@ class TwitchClips:
                 print(e)
 
     def download_clips(self):
+        # Initialize the WebDriver
+        self.driver = webdriver.Chrome()
+        
         for clip in self.clips:
-            pass
+            
+            # Go to the URL
+            self.driver.get(clip.url)
+
+            # Now you can scrape the page or interact with it as needed
+            content = self.driver.page_source
+
+            soup = BeautifulSoup(content, "html.parser")
+
+            clips = soup.find("div", id="clips-day").find_all("div", class_="clip-entity")
+
+            for clip in clips:
+                clip_id = clip.find("div", class_="clip-tp")["data-litebox"].split("clip=")[
+                    -1
+                ]
+
+                if clip is None:
+                    continue
+
+                self.clips_id_list.append(clip_id)
+                
+        # Close the WebDriver
+        self.driver.quit()
+            
