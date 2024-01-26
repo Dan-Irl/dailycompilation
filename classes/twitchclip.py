@@ -4,6 +4,7 @@ from classes.twitch_api import TwitchAPI
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from classes.clip import Clip
+import requests
 
 TODO = """
     - Set up logger for TwitchClips"""
@@ -23,7 +24,10 @@ class TwitchClips:
         self.clips = []
 
     def get_clip_ids(self):
-        # Go to the URL
+        # Initialize the WebDriver
+        self.driver = webdriver.Chrome()
+
+        # Get url content
         self.driver.get(self.clips_url)
 
         # Now you can scrape the page or interact with it as needed
@@ -47,56 +51,66 @@ class TwitchClips:
             self.clips_id_list.append(clip_id)
 
     def prepare_clips(self):
-        # Initialize the WebDriver
-        self.driver = webdriver.Chrome()
-        
         for clip_id in self.clips_id_list:
             try:
+                # Get clip information from the Twitch API
                 clip = self.api.get_clip(clip_id)
-                clip = Clip(
-                    clip["id"],
-                    clip["url"],
-                    clip["broadcaster_id"],
-                    clip["broadcaster_name"],
-                    clip["game_id"],
-                    clip["title"],
-                    clip["view_count"],
-                    clip["created_at"],
-                    clip["thumbnail_url"],
-                    clip["duration"],
-                    f"clips/{clip_id}.mp4",
+
+                # Create a Clip instance
+                clip_instance = Clip(
+                    id=clip["id"],
+                    url=clip["url"],
+                    broadcaster_id=clip["broadcaster_id"],
+                    broadcaster_name=clip["broadcaster_name"],
+                    game_id=clip["game_id"],
+                    game_name=self.api.get_game(clip["game_id"]),
+                    title=clip["title"],
+                    view_count=clip["view_count"],
+                    created_at=clip["created_at"],
+                    thumbnail_url=clip["thumbnail_url"],
+                    thumbnail_path=f"data/thumbnails/{clip_id}.jpg",
+                    duration=clip["duration"],
+                    clip_path=f"data/clips/{clip_id}.mp4",
                 )
 
-                self.clips.append(clip)
+                self.clips.append(clip_instance)
             except Exception as e:
                 print(e)
 
     def download_clips(self):
         # Initialize the WebDriver
         self.driver = webdriver.Chrome()
-        
+
         for clip in self.clips:
-            
-            # Go to the URL
+            # Go to the URL of the twitch clip
             self.driver.get(clip.url)
 
-            # Now you can scrape the page or interact with it as needed
+            # Scrape clip URL
             content = self.driver.page_source
-
             soup = BeautifulSoup(content, "html.parser")
 
-            clips = soup.find("div", id="clips-day").find_all("div", class_="clip-entity")
+            # parse video URL of the clip
+            try:
+                clip_url = soup.find("video")["src"]
+                clip_id = clip.id
+                file_name = "data/clips/" + clip_id + ".mp4"
+            except Exception as e:
+                raise e
 
-            for clip in clips:
-                clip_id = clip.find("div", class_="clip-tp")["data-litebox"].split("clip=")[
-                    -1
-                ]
+            if clip_url is None:
+                raise Exception("Clip URL is None")
 
-                if clip is None:
-                    continue
+            # Download the clip
+            response = requests.get(clip_url, stream=True)
 
-                self.clips_id_list.append(clip_id)
-                
+            # Ensure the request is successful
+            if response.status_code == 200:
+                with open(file_name, "wb") as file:
+                    for chunk in response.iter_content(chunk_size=1024):
+                        if chunk:  # filter out keep-alive new chunks
+                            file.write(chunk)
+            else:
+                raise Exception("Clip download failed")
+
         # Close the WebDriver
         self.driver.quit()
-            
