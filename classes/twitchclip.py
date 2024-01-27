@@ -3,9 +3,14 @@ import os
 from classes.twitch_api import TwitchAPI
 from bs4 import BeautifulSoup
 from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 from classes.clip import Clip
 import requests
 import time
+import logging
 
 TODO = """
     - Set up logger for TwitchClips"""
@@ -24,21 +29,47 @@ class TwitchClips:
         self.clips_id_list = []
         self.clips = []
 
-    def get_clip_ids(self):
-        # Initialize the WebDriver
-        self.driver = webdriver.Chrome()
+        # Chrome options
+        chrome_options = Options()
+        chrome_options.add_argument("--headless")  # Ensure GUI is off
+        chrome_options.add_argument("--no-sandbox")
+        chrome_options.add_argument("--disable-dev-shm-usage")
+        chrome_options.add_argument("--enable-javascript")
 
+        # Initialize the WebDriver
+        self.driver = webdriver.Chrome(options=chrome_options)
+
+    def get_clip_ids(self):
         # Get url content
         self.driver.get(self.clips_url)
 
-        # Wait for Cloudflare's anti-bot page (adjust the time as needed)
-        time.sleep(5)
+        try:
+            # Wait for a specific element to be loaded for up to 30 seconds
+            # Replace 'someElementId' with the actual ID or element you expect to be present
+            WebDriverWait(self.driver, 30).until(
+                EC.presence_of_element_located((By.ID, "clips-day"))
+            )
 
-        # Now you can scrape the page or interact with it as needed
-        content = self.driver.page_source
+            # Now you can scrape the page or interact with it as needed
+            content = self.driver.page_source
 
-        # Close the WebDriver
-        self.driver.quit()
+            # Log HTML to a file
+            try:
+                with open(
+                    "dailycompilation/logs/page_source.html", "w", encoding="utf-8"
+                ) as file:
+                    file.write(content)
+            except Exception as e:
+                logging.warning(f"Could not write html file: {e}")
+
+        except Exception as e:
+            logging.warning(f"Error during webpage loading: {e}")
+
+        finally:
+            # Close the WebDriver
+            self.driver.quit()
+
+        logging.info("Finished scrape and closed driver")
 
         soup = BeautifulSoup(content, "html.parser")
 
@@ -72,9 +103,9 @@ class TwitchClips:
                     view_count=clip["view_count"],
                     created_at=clip["created_at"],
                     thumbnail_url=clip["thumbnail_url"],
-                    thumbnail_path=f"data/thumbnails/{clip_id}.jpg",
+                    thumbnail_path=f"dailycompilation/data/thumbnails/{clip_id}.jpg",
                     duration=clip["duration"],
-                    clip_path=f"data/clips/{clip_id}.mp4",
+                    clip_path=f"dailycompilation/data/clips/{clip_id}.mp4",
                 )
 
                 self.clips.append(clip_instance)
@@ -82,8 +113,15 @@ class TwitchClips:
                 print(e)
 
     def download_clips(self):
+        # Chrome options
+        chrome_options = Options()
+        chrome_options.add_argument("--headless")  # Ensure GUI is off
+        chrome_options.add_argument("--no-sandbox")
+        chrome_options.add_argument("--disable-dev-shm-usage")
+        chrome_options.add_argument("--enable-javascript")
+
         # Initialize the WebDriver
-        self.driver = webdriver.Chrome()
+        self.driver = webdriver.Chrome(options=chrome_options)
 
         for clip in self.clips:
             # Go to the URL of the twitch clip
