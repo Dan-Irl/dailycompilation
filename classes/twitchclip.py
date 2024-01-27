@@ -5,6 +5,7 @@ from bs4 import BeautifulSoup
 from selenium import webdriver
 from classes.clip import Clip
 import requests
+import time
 
 TODO = """
     - Set up logger for TwitchClips"""
@@ -29,6 +30,9 @@ class TwitchClips:
 
         # Get url content
         self.driver.get(self.clips_url)
+
+        # Wait for Cloudflare's anti-bot page (adjust the time as needed)
+        time.sleep(5)
 
         # Now you can scrape the page or interact with it as needed
         content = self.driver.page_source
