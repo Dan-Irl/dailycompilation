@@ -6,6 +6,7 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
+from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.support import expected_conditions as EC
 from classes.clip import Clip
 import requests
@@ -127,6 +128,23 @@ class TwitchClips:
             # Go to the URL of the twitch clip
             self.driver.get(clip.url)
 
+            try:
+                # Wait for the mature content button to be clickable (with increased timeout)
+                wait = WebDriverWait(self.driver, 2)  # Increased timeout
+                mature_content_button = wait.until(
+                    EC.element_to_be_clickable(
+                        (
+                            By.XPATH,
+                            '//*[@id="channel-player-gate"]/div/div/div[4]/div/button',
+                        )
+                    )
+                )
+
+                # Click the mature content button if found
+                mature_content_button.click()
+            except TimeoutException:
+                pass
+
             # Scrape clip URL
             content = self.driver.page_source
             soup = BeautifulSoup(content, "html.parser")
@@ -135,9 +153,9 @@ class TwitchClips:
             try:
                 clip_url = soup.find("video")["src"]
                 clip_id = clip.id
-                file_name = "data/clips/" + clip_id + ".mp4"
+                file_name = "dailycompilation/data/clips/" + clip_id + ".mp4"
             except Exception as e:
-                raise e
+                raise Exception(f"Could not parse clip URL: {e}")
 
             if clip_url is None:
                 raise Exception("Clip URL is None")
