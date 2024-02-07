@@ -25,9 +25,11 @@ compilation = editor.video_info(clips)
 print(compilation.title)
 print(compilation.description)
 
-# # Init youtube uploader
-# uploader = YoutubeUploader()
+# Init youtube uploader
+uploader = YoutubeUploader()
 
-# # Authenticate
-# uploader.get_authenticated_service()
-# # uploader.upload_video(compilation)
+# Authenticate
+uploader.get_authenticated_service()
+
+# upload video
+uploader.upload_video(compilation)
