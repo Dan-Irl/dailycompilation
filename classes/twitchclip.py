@@ -45,23 +45,13 @@ class TwitchClips:
         self.driver.get(self.clips_url)
 
         try:
-            # Wait for a specific element to be loaded for up to 30 seconds
-            # Replace 'someElementId' with the actual ID or element you expect to be present
+            # wait for the clips to load
             WebDriverWait(self.driver, 30).until(
                 EC.presence_of_element_located((By.ID, "clips-day"))
             )
 
-            # Now you can scrape the page or interact with it as needed
+            # Get the page source
             content = self.driver.page_source
-
-            # Log HTML to a file
-            try:
-                with open(
-                    "dailycompilation/logs/page_source.html", "w", encoding="utf-8"
-                ) as file:
-                    file.write(content)
-            except Exception as e:
-                logging.warning(f"Could not write html file: {e}")
 
         except Exception as e:
             logging.warning(f"Error during webpage loading: {e}")
@@ -76,6 +66,7 @@ class TwitchClips:
 
         clips = soup.find("div", id="clips-day").find_all("div", class_="clip-entity")
 
+        # Get the clip IDs
         for clip in clips:
             clip_id = clip.find("div", class_="clip-tp")["data-litebox"].split("clip=")[
                 -1
@@ -87,6 +78,7 @@ class TwitchClips:
             self.clips_id_list.append(clip_id)
 
     def prepare_clips(self):
+        """Prepare the clips for download by creating Clip instances and adding them to the clips list."""
         for clip_id in self.clips_id_list:
             try:
                 # Get clip information from the Twitch API
@@ -114,6 +106,8 @@ class TwitchClips:
                 print(e)
 
     def download_clips(self):
+        """Download the clips to the local machine."""
+
         # Chrome options
         chrome_options = Options()
         chrome_options.add_argument("--headless")  # Ensure GUI is off
@@ -129,8 +123,8 @@ class TwitchClips:
             self.driver.get(clip.url)
 
             try:
-                # Wait for the mature content button to be clickable (with increased timeout)
-                wait = WebDriverWait(self.driver, 2)  # Increased timeout
+                # Wait for the mature content button to be clickable
+                wait = WebDriverWait(self.driver, 2)
                 mature_content_button = wait.until(
                     EC.element_to_be_clickable(
                         (
